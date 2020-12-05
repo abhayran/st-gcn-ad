@@ -1,0 +1,17 @@
+{
+  "seed": 1000,
+  "gpu": true,
+  "model": {
+    "stride": 1,
+    "conv_mode": "same",
+    "filter_sizes": [17, 13, 9, 9, 9, 9],
+    "graph_norm": true,
+    "aggregator": "conv_avg"
+  },
+  "params": {
+    "shuffle": true,
+    "batch_size": 64,
+    "epochs": 250,
+    "learning_rate": 1e-4
+  }
+}
