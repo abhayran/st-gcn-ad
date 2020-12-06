@@ -2,11 +2,11 @@
   "seed": 1000,
   "gpu": true,
   "model": {
-    "stride": 1,
-    "conv_mode": "same",
-    "filter_sizes": [17, 13, 9, 9, 9, 9],
     "graph_norm": true,
-    "aggregator": "conv_avg"
+    "aggr": "mean",
+    "kernel_sizes": [17, 13, 9, 9, 9, 9],
+    "strides": [1, 1, 1, 1, 1, 1],
+    "paddings": [0, 0, 0, 0, 0, 0]
   },
   "params": {
     "shuffle": true,
