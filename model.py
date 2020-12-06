@@ -53,7 +53,7 @@ class SAGE(torch.nn.Module):
             dims = [self.input_dim]  # will hold temporal depths for each layer
             for i in range(len(kernel_sizes)):
                 dims.append(1 + (dims[-1] + 2*paddings[i] - kernel_sizes[i]) // strides[i])
-            self.alpha_hidden = torch.nn.ParameterList([torch.nn.Parameter(torch.zeros(dim, dtype=torch.float)) for dim in dims])
+            self.alpha_hidden = torch.nn.ParameterList([torch.nn.Parameter(torch.ones(dim, dtype=torch.float)) for dim in dims])
             self.scale_hidden = torch.nn.ParameterList([torch.nn.Parameter(torch.ones(dim, dtype=torch.float)) for dim in dims])
             self.shift_hidden = torch.nn.ParameterList([torch.nn.Parameter(torch.zeros(dim, dtype=torch.float)) for dim in dims])
 
