@@ -2,11 +2,18 @@
   "seed": 1000,
   "gpu": true,
   "model": {
-    "graph_norm": true,
-    "aggr": "mean",
+    "input_shape": [148, 195],
     "kernel_sizes": [17, 13, 9, 9, 9, 9],
     "strides": [1, 1, 1, 1, 1, 1],
-    "paddings": [0, 0, 0, 0, 0, 0]
+    "paddings": [0, 0, 0, 0, 0, 0],
+    "message_channels": [10, 10, 10, 10, 10, 10],
+    "graph_norm": true,
+    "aggr": "mean"
+  },
+  "paths": {
+    "train": "./train",
+    "val": "./val",
+    "test": "./test"
   },
   "params": {
     "shuffle": true,
