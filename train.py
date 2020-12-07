@@ -40,7 +40,7 @@ def train(config):
     loss_function = torch.nn.CrossEntropyLoss(reduction='sum')
 
     train_loss_list, val_loss_list = [], []
-    for epoch in range(epochs):
+    for _ in range(epochs):
         model.train()
         train_loss = 0.0
         for _, data in enumerate(data_loader_train):
