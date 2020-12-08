@@ -37,7 +37,7 @@ def train(config):
     data_loader_val = DataLoader(data_val, batch_size=1, shuffle=False)
 
     optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
-    loss_function = torch.nn.CrossEntropyLoss(reduction='sum')
+    loss_function = torch.nn.CrossEntropyLoss(reduction='mean')
 
     train_loss_list, val_loss_list = [], []
     for _ in range(epochs):
