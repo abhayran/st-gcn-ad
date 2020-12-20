@@ -1,24 +1,27 @@
 {
   "seed": 1000,
   "gpu": true,
+
   "model": {
     "input_shape": [148, 195],
     "kernel_sizes": [17, 13, 9, 9, 9, 9],
     "strides": [1, 1, 1, 1, 1, 1],
     "paddings": [0, 0, 0, 0, 0, 0],
-    "message_channels": [10, 10, 10, 10, 10, 10],
-    "graph_norm": true,
-    "aggr": "mean"
+    "message_channels": [3, 3, 3, 3, 3, 3],
+    "graph_norm": false,
+    "aggr": "max"
   },
-  "paths": {
-    "train": "./train",
-    "val": "./val",
-    "test": "./test"
+
+  "file_names": {
+    "train": [],
+    "val": []
   },
+
   "params": {
+    "snet_threshold": 0.05,
     "shuffle": true,
-    "batch_size": 64,
-    "epochs": 250,
+    "batch_size": 1,
+    "epochs": 100,
     "learning_rate": 1e-4
   }
 }
