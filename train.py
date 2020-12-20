@@ -5,61 +5,106 @@ from data import GraphDataset
 from eval import evaluate
 import json
 import matplotlib.pyplot as plt
+import os
 
 
 def train(config):
     """
     :param config: dict for the training parameters and file paths
-    :return: model, train_loss_list, val_loss_list: trained model, lists of training and validation losses
+    :return: history: dict containing trained model, lists of training and validation losses & accuracies
     """
     torch.manual_seed(config['seed'])
     if config['gpu']:
+        device = torch.device('cuda')
         torch.cuda.manual_seed_all(config['seed'])
+    else:
+        device = torch.device('cpu')
 
-    shuffle = config['shuffle']
-    epochs = config['epochs']
-    batch_size = config['batch_size']
-    learning_rate = config['learning_rate']
+    snet_threshold = config['params']['snet_threshold']
+    shuffle = config['params']['shuffle']
+    batch_size = config['params']['batch_size']
+    epochs = config['params']['epochs']
+    learning_rate = config['params']['learning_rate']
 
-    input_shape = config['input_shape']
-    kernel_sizes = config['kernel_sizes']
-    strides = config['strides']
-    paddings = config['paddings']
-    message_channels = config['message_channels']
-    graph_norm = config['graph_norm']
-    aggr = config['aggr']
+    input_shape = config['model']['input_shape']
+    kernel_sizes = config['model']['kernel_sizes']
+    strides = config['model']['strides']
+    paddings = config['model']['paddings']
+    message_channels = config['model']['message_channels']
+    graph_norm = config['model']['graph_norm']
+    aggr = config['model']['aggr']
 
     model = SAGE(input_shape, kernel_sizes, strides, paddings, message_channels, graph_norm=graph_norm, aggr=aggr)
+    model = model.float()
+    model = model.to(device)
 
-    data_train = GraphDataset(config['paths']['train'])
+    data_train = GraphDataset('./dataset', config['file_names']['train'], snet_threshold, device)
     data_loader_train = DataLoader(data_train, batch_size=batch_size, shuffle=shuffle)
-    data_val = GraphDataset(config['paths']['val'])
+    data_val = GraphDataset('./dataset', config['file_names']['val'], snet_threshold, device)
     data_loader_val = DataLoader(data_val, batch_size=1, shuffle=False)
 
     optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
     loss_function = torch.nn.CrossEntropyLoss(reduction='mean')
 
-    train_loss_list, val_loss_list = [], []
-    for _ in range(epochs):
+    train_loss_list, train_acc_list, val_loss_list, val_acc_list = [], [], [], []
+    for epoch in range(epochs):
         model.train()
         train_loss = 0.0
+        train_acc = 0.0
         for _, data in enumerate(data_loader_train):
             optimizer.zero_grad()
-            loss = loss_function(model(data), data.y)
+            pred = model(data).unsqueeze(dim=0)
+            gnd = torch.tensor(torch.where(data.y == 1)[0].item(), dtype=torch.long, device=device).unsqueeze(dim=0)
+            train_acc += float(torch.max(pred.squeeze(), 0)[1] == torch.max(data.y, 0)[1])
+            loss = loss_function(pred, gnd)
+            del data
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
-        train_loss_list.append(train_loss)
-        val_loss_list.append(evaluate(model, data_loader_val))
-    return model, train_loss_list, val_loss_list
+            train_loss += float(loss.item() * batch_size)
+        train_loss_list.append(train_loss / len(data_train))
+        train_acc_list.append(train_acc / len(data_train))
+
+        val_loss, val_acc = evaluate(model, data_loader_val, loss_function, device)
+        val_loss_list.append(val_loss)
+        val_acc_list.append(val_acc)
+
+        print(f'epoch: {epoch + 1} | '
+              f'train loss: {train_loss_list[-1]:.4f} | '
+              f'train acc: {train_acc_list[-1]:.4f} | '
+              f'val loss: {val_loss_list[-1]:.4f} | '
+              f'val acc: {val_acc_list[-1]:.4f}')
+
+    return {'model': model,
+            'train_loss': train_loss_list,
+            'train_acc': train_acc_list,
+            'val_loss': val_loss_list,
+            'val_acc': val_acc_list}
 
 
 if __name__ == '__main__':
     with open('config.json') as f:
         configuration = json.load(f)
-    network, train_losses, val_losses = train(configuration)
-    plt.plot(train_losses)
-    plt.plot(val_losses)
+
+    path = './dataset'
+    sci, mci, ad = [], [], []
+    for name in os.listdir(path):
+        if name.startswith('sci'):
+            sci.append(name)
+        elif name.startswith('mci'):
+            mci.append(name)
+        elif name.startswith('ad'):
+            ad.append(name)
+        else:
+            print(f'Passing for the file {name}')
+            pass
+
+    configuration['file_names']['train'] = sci[:int((2/3) * len(sci))] + mci[:int((2/3) * len(mci))] + ad[:int((2/3) * len(ad))]
+    configuration['file_names']['val'] = sci[int((2/3) * len(sci)):] + mci[int((2/3) * len(mci)):] + ad[int((2/3) * len(ad)):]
+    assert set(configuration['file_names']['train']).isdisjoint(configuration['file_names']['val']), 'Training and validation sets have common elements!'
+
+    history = train(configuration)
+    plt.plot(history['train_loss'])
+    plt.plot(history['val_loss'])
     plt.title('Model losses')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
