@@ -4,11 +4,9 @@
 
   "model": {
     "input_shape": [148, 195],
-    "kernel_sizes": [17, 13, 9, 9, 9, 9],
-    "strides": [1, 1, 1, 1, 1, 1],
-    "paddings": [0, 0, 0, 0, 0, 0],
-    "message_channels": [3, 3, 3, 3, 3, 3],
-    "graph_norm": false,
+    "kernel_sizes": [23, 7, 3, 17],
+    "strides": [6, 2, 1, 1],
+    "paddings": [11, 3, 1, 0],
     "aggr": "max"
   },
 
@@ -20,8 +18,8 @@
   "params": {
     "snet_threshold": 0.05,
     "shuffle": true,
-    "batch_size": 1,
-    "epochs": 100,
-    "learning_rate": 1e-4
+    "batch_size": 8,
+    "epochs": 1000,
+    "learning_rate": 2e-4
   }
 }
