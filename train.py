@@ -1,6 +1,6 @@
 import torch
 from torch_geometric.data import DataLoader
-from model import SAGE
+from model import Model
 from data import GraphDataset
 from eval import evaluate
 import json
@@ -13,12 +13,13 @@ def train(config):
     :param config: dict for the training parameters and file paths
     :return: history: dict containing trained model, lists of training and validation losses & accuracies
     """
-    torch.manual_seed(config['seed'])
     if config['gpu']:
         device = torch.device('cuda')
-        torch.cuda.manual_seed_all(config['seed'])
     else:
         device = torch.device('cpu')
+    torch.manual_seed(config['seed'])
+    torch.cuda.manual_seed_all(config['seed'])
+    # torch.set_deterministic(True)
 
     snet_threshold = config['params']['snet_threshold']
     shuffle = config['params']['shuffle']
@@ -30,11 +31,9 @@ def train(config):
     kernel_sizes = config['model']['kernel_sizes']
     strides = config['model']['strides']
     paddings = config['model']['paddings']
-    message_channels = config['model']['message_channels']
-    graph_norm = config['model']['graph_norm']
     aggr = config['model']['aggr']
 
-    model = SAGE(input_shape, kernel_sizes, strides, paddings, message_channels, graph_norm=graph_norm, aggr=aggr)
+    model = Model(input_shape, kernel_sizes, strides, paddings, aggr=aggr)
     model = model.float()
     model = model.to(device)
 
@@ -44,7 +43,7 @@ def train(config):
     data_loader_val = DataLoader(data_val, batch_size=1, shuffle=False)
 
     optimizer = torch.optim.Adamax(model.parameters(), lr=learning_rate)
-    loss_function = torch.nn.CrossEntropyLoss(reduction='mean')
+    loss_function = torch.nn.CrossEntropyLoss(reduction='sum')
 
     train_loss_list, train_acc_list, val_loss_list, val_acc_list = [], [], [], []
     for epoch in range(epochs):
@@ -52,15 +51,16 @@ def train(config):
         train_loss = 0.0
         train_acc = 0.0
         for _, data in enumerate(data_loader_train):
+            data = data.to(device)
             optimizer.zero_grad()
-            pred = model(data).unsqueeze(dim=0)
-            gnd = torch.tensor(torch.where(data.y == 1)[0].item(), dtype=torch.long, device=device).unsqueeze(dim=0)
-            train_acc += float(torch.max(pred.squeeze(), 0)[1] == torch.max(data.y, 0)[1])
+            pred = model(data)
+            gnd = data.y
+            train_acc += float(torch.sum(torch.tensor(torch.max(pred, 1)[1] == gnd)))
             loss = loss_function(pred, gnd)
             del data
             loss.backward()
             optimizer.step()
-            train_loss += float(loss.item() * batch_size)
+            train_loss += float(loss.item())
         train_loss_list.append(train_loss / len(data_train))
         train_acc_list.append(train_acc / len(data_train))
 

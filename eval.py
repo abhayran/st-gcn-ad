@@ -11,10 +11,12 @@ def evaluate(model, data_loader, loss_function, device):
     """
     val_loss, val_acc = 0.0, 0.0
     model.eval()
-    for _, data in enumerate(data_loader):
-        pred = model(data).unsqueeze(dim=0)
-        gnd = torch.tensor(torch.where(data.y == 1)[0].item(), dtype=torch.long).unsqueeze(dim=0).to(device)
-        val_acc += float(torch.max(pred.squeeze(), 0)[1] == torch.max(data.y, 0)[1])
-        del data
-        val_loss += float(loss_function(pred, gnd))
+    with torch.no_grad():
+        for _, data in enumerate(data_loader):
+            data = data.to(device)
+            pred = model(data)
+            gnd = data.y
+            val_acc += float(torch.max(pred, 1)[1] == data.y)
+            del data
+            val_loss += float(loss_function(pred, gnd).item())
     return val_loss / len(data_loader), val_acc / len(data_loader)

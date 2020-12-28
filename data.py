@@ -15,10 +15,7 @@ class GraphDataset(Dataset):
         self.data_list = []
         for name in names:
             data = torch.load(f'{path}/{name}')
-            x = data.x
-            edge_index = snet_to_edge_index(data.snet, threshold)
-            y = data.y
-            sample = Data(torch.tensor(x, dtype=torch.float32), edge_index=edge_index, y=y.to(torch.long))
+            sample = Data(x=data.x, edge_index=snet_to_edge_index(data.snet, threshold), y=data.y)
             sample = sample.to(device)
             self.data_list.append(sample)
 
