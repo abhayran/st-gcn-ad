@@ -55,7 +55,7 @@ def train(config):
             optimizer.zero_grad()
             pred = model(data)
             gnd = data.y
-            train_acc += float(torch.sum(torch.tensor(torch.max(pred, 1)[1] == gnd)))
+            train_acc += float(torch.sum(torch.tensor(torch.max(pred.clone().detach(), 1)[1] == gnd.clone().detach())))
             loss = loss_function(pred, gnd)
             del data
             loss.backward()
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         elif name.startswith('ad'):
             ad.append(name)
         else:
-            print(f'Passing for the file {name}')
+            print(f"Passing for the file '{name}'")
             pass
 
     configuration['file_names']['train'] = sci[:int((2/3) * len(sci))] + mci[:int((2/3) * len(mci))] + ad[:int((2/3) * len(ad))]
